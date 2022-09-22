@@ -12,10 +12,10 @@ function main() {
   const grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
 
   const ambientLight = new THREE.AmbientLight('orange', 0.2)
-  const pointLight01 = new THREE.PointLight('white', 0.7, 100)
-  pointLight01.position.set(-5, 3, 3)
-  const pointLight02 = new THREE.PointLight('white', 0.7, 100)
-  pointLight02.position.set(3, 3, -1)
+  const pointLight01 = new THREE.PointLight('white', 0.8, 100)
+  pointLight01.position.set(-5, 3, -1)
+  const pointLight02 = new THREE.PointLight('white', 0.8, 100)
+  pointLight02.position.set(5, 3, 3)
 
   const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 200)
   camera.position.set(8.5, 4, 4.5)
@@ -72,7 +72,7 @@ function main() {
   const canvas: HTMLElement = document.querySelector(`canvas#${CANVAS_ID}`)!
 
   const controls = new OrbitControls(camera, canvas)
-  // controls.autoRotate = true
+  controls.autoRotate = true
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
 
@@ -80,7 +80,7 @@ function main() {
     // animation goes here
 
     if (brain) {
-      brain.rotateY(Math.PI / 500)
+      // brain.rotateY(Math.PI / 500)
 
       const { x: ctrlTargetX, y: ctrlTargetY, z: ctrlTargetZ } = brain.position
       controls.target.set(ctrlTargetX, ctrlTargetY, ctrlTargetZ)
