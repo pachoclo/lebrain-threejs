@@ -1,5 +1,6 @@
+import GUI from 'lil-gui'
 import * as THREE from 'three'
-import { MeshPhongMaterial } from 'three'
+import { MeshPhongMaterial, Object3D, PointLightHelper } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { logObject } from './helpers/dump-object'
@@ -12,12 +13,16 @@ async function main() {
   const grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
 
   const ambientLight = new THREE.AmbientLight('orange', 0.2)
-  const pointLight01 = new THREE.PointLight('white', 0.8, 100)
-  pointLight01.position.set(-5, 3, -1)
-  const pointLight02 = new THREE.PointLight('white', 0.8, 100)
+  const pointLight01 = new THREE.PointLight('#69ffeb', 0.65, 100)
+  pointLight01.position.set(-5, 3, 2)
+  const pointLight01Helper = new PointLightHelper(pointLight01)
+  pointLight01Helper.visible = false
+  const pointLight02 = new THREE.PointLight('#ffe9fc', 0.8, 100)
   pointLight02.position.set(5, 3, 3)
+  const pointLight02Helper = new PointLightHelper(pointLight02)
+  pointLight02Helper.visible = false
 
-  const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 200)
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200)
   camera.position.set(5.3, 1.6, 5.6)
 
   const scene = new THREE.Scene()
@@ -25,14 +30,14 @@ async function main() {
   scene.add(ambientLight)
   scene.add(pointLight01)
   scene.add(pointLight02)
+  scene.add(pointLight01Helper)
+  scene.add(pointLight02Helper)
 
-  let brain = await makeBrain()
-  scene.add(brain)
+  let brain: Object3D
 
   const canvas: HTMLElement = document.querySelector(`canvas#${CANVAS_ID}`)!
 
   const controls = new OrbitControls(camera, canvas)
-  controls.autoRotate = true
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
 
@@ -54,17 +59,45 @@ async function main() {
       camera.updateProjectionMatrix()
     }
 
-    logObject(camera)
-
     renderer.render(scene, camera)
     requestAnimationFrame(renderLoop)
   }
   requestAnimationFrame(renderLoop)
+
+  brain = await makeBrain()
+  scene.add(brain)
+
+  {
+    const gui = new GUI({ title: '⚙️ Config' })
+
+    const cameraControls = gui.addFolder('Camera')
+    cameraControls.add(controls, 'autoRotate')
+    cameraControls.close()
+
+    const lightsControls = gui.addFolder('Lights')
+    lightsControls.close()
+
+    const pointLight01Controls = lightsControls.addFolder('Point Light 01')
+    pointLight01Controls.add(pointLight01Helper, 'visible').name('helper')
+    pointLight01Controls.addColor(pointLight01, 'color')
+    pointLight01Controls.close()
+
+    const pointLight02Controls = lightsControls.addFolder('Point Light 02')
+    pointLight02Controls.add(pointLight02Helper, 'visible').name('helper')
+    pointLight02Controls.addColor(pointLight02, 'color')
+    pointLight02Controls.close()
+
+    const ambientLightControls = lightsControls.addFolder('Ambient Light')
+    ambientLightControls.addColor(ambientLight, 'color')
+    ambientLightControls.add(ambientLight, 'intensity', 0, 2, 0.2).name('helper')
+    ambientLightControls.close()
+  }
 }
 
 async function makeBrain() {
   const gltfLoader = new GLTFLoader()
-  const gltf = await gltfLoader.loadAsync('/models/brain_sliced.glb')
+  const gltf = await gltfLoader.loadAsync('/models/brain_sliced.glb', (e) => console.log(e))
+  document.querySelector('#loader')?.remove()
   const cerebrumRight = gltf.scene.getObjectByName('cerebrum-right')! as THREE.Mesh
   const cerebrumMaterial = new MeshPhongMaterial({ color: 'pink', shininess: 50 })
   cerebrumRight.material = cerebrumMaterial // override material
