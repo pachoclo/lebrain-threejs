@@ -1,11 +1,11 @@
+import GUI from 'lil-gui'
 import * as THREE from 'three'
-import { Group, MeshPhongMaterial, Object3D, PointLightHelper } from 'three'
+import { MeshPhongMaterial, Object3D, PointLightHelper } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { logObject } from './helpers/dump-object'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
 import './style.css'
-import GUI from 'lil-gui'
 
 const CANVAS_ID = 'lebrain'
 
