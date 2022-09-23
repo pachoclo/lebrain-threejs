@@ -64,6 +64,14 @@ canvas {
   margin-left: -70px;
 }
 
+#brain-icon {
+  display: inline-block;
+  animation-name: flip;
+  animation-duration: 1000ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
@@ -95,15 +103,14 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* @media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@keyframes flip {
+  0% {
+    transform: rotateY(0deg);
   }
-  a:hover {
-    color: #747bff;
+  50% {
+    transform: rotateY(180deg);
   }
-  button {
-    background-color: #f9f9f9;
+  100% {
+    transform: rotateY(0deg);
   }
-} */
+}

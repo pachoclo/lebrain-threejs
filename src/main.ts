@@ -67,6 +67,7 @@ async function main() {
   brain = await makeBrain()
   scene.add(brain)
 
+  // GUI
   {
     const gui = new GUI({ title: '⚙️ Config' })
 
@@ -96,8 +97,9 @@ async function main() {
 
 async function makeBrain() {
   const gltfLoader = new GLTFLoader()
-  const gltf = await gltfLoader.loadAsync('/models/brain_sliced.glb', (e) => console.log(e))
+  const gltf = await gltfLoader.loadAsync('/models/brain_sliced.glb')
   document.querySelector('#loader')?.remove()
+
   const cerebrumRight = gltf.scene.getObjectByName('cerebrum-right')! as THREE.Mesh
   const cerebrumMaterial = new MeshPhongMaterial({ color: 'pink', shininess: 50 })
   cerebrumRight.material = cerebrumMaterial // override material
@@ -106,7 +108,6 @@ async function makeBrain() {
   cerebrumLeft.copy(cerebrumRight)
   cerebrumLeft.name = 'cerebrum-left'
   cerebrumLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1)) // mirror geometry
-  cerebrumLeft.castShadow = true
 
   const cerebellumRight = gltf.scene.getObjectByName('cerebellum-right') as THREE.Mesh
 
