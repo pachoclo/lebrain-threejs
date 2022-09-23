@@ -1,10 +1,11 @@
 import * as THREE from 'three'
-import { MeshPhongMaterial } from 'three'
+import { Group, MeshPhongMaterial } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { logObject } from './helpers/dump-object'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
 import './style.css'
+import GUI from 'lil-gui'
 
 const CANVAS_ID = 'lebrain'
 
@@ -32,9 +33,13 @@ async function main() {
   const canvas: HTMLElement = document.querySelector(`canvas#${CANVAS_ID}`)!
 
   const controls = new OrbitControls(camera, canvas)
-  controls.autoRotate = true
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+
+  const gui = new GUI({ title: '⚙️' })
+  const cameraControls = gui.addFolder('Camera')
+  cameraControls.add(controls, 'autoRotate')
+  gui.close()
 
   function renderLoop() {
     // animation goes here
