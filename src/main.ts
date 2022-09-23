@@ -8,7 +8,7 @@ import './style.css'
 
 const CANVAS_ID = 'lebrain'
 
-function main() {
+async function main() {
   const grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
 
   const ambientLight = new THREE.AmbientLight('orange', 0.2)
@@ -18,7 +18,7 @@ function main() {
   pointLight02.position.set(5, 3, 3)
 
   const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 200)
-  camera.position.set(8.5, 4, 4.5)
+  camera.position.set(5.3, 1.6, 5.6)
 
   const scene = new THREE.Scene()
   scene.add(grid)
@@ -26,48 +26,8 @@ function main() {
   scene.add(pointLight01)
   scene.add(pointLight02)
 
-  let brain: THREE.Object3D
-  const gltfLoader = new GLTFLoader()
-  gltfLoader.load('/models/brain_sliced.glb', (gltf) => {
-    const cerebrumRight = gltf.scene.getObjectByName('cerebrum-right')! as THREE.Mesh
-    const cerebrumMaterial = new MeshPhongMaterial({ color: 'pink', shininess: 1 })
-    cerebrumRight.material = cerebrumMaterial // override material
-
-    const cerebrumLeft = new THREE.Mesh()
-    cerebrumLeft.copy(cerebrumRight)
-    cerebrumLeft.name = 'cerebrum-left'
-    cerebrumLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1)) // mirror geometry
-
-    const cerebellumRight = gltf.scene.getObjectByName('cerebellum-right') as THREE.Mesh
-
-    const cerebellumLeft = new THREE.Mesh()
-    cerebellumLeft.copy(cerebellumRight)
-    cerebellumLeft.name = 'cerebellum-left'
-    cerebellumLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
-
-    const rightHemisphere = new THREE.Group()
-    rightHemisphere.name = 'right-hemisphere'
-    rightHemisphere.add(cerebrumRight)
-    rightHemisphere.add(cerebellumRight)
-
-    const leftHemisphere = new THREE.Group()
-    leftHemisphere.name = 'left-hemisphere'
-    leftHemisphere.add(cerebrumLeft)
-    leftHemisphere.add(cerebellumLeft)
-
-    brain = new THREE.Object3D()
-    brain.name = 'brain'
-    brain.add(leftHemisphere)
-    brain.add(rightHemisphere)
-    brain.scale.setScalar(3)
-    brain.position.set(0, 1.5, 0)
-
-    scene.add(brain)
-
-    registerMeshControls(leftHemisphere)
-
-    logObject(brain)
-  })
+  let brain = await makeBrain()
+  scene.add(brain)
 
   const canvas: HTMLElement = document.querySelector(`canvas#${CANVAS_ID}`)!
 
@@ -94,10 +54,56 @@ function main() {
       camera.updateProjectionMatrix()
     }
 
+    logObject(camera)
+
     renderer.render(scene, camera)
     requestAnimationFrame(renderLoop)
   }
   requestAnimationFrame(renderLoop)
+}
+
+async function makeBrain() {
+  const gltfLoader = new GLTFLoader()
+  const gltf = await gltfLoader.loadAsync('/models/brain_sliced.glb')
+  const cerebrumRight = gltf.scene.getObjectByName('cerebrum-right')! as THREE.Mesh
+  const cerebrumMaterial = new MeshPhongMaterial({ color: 'pink', shininess: 50 })
+  cerebrumRight.material = cerebrumMaterial // override material
+
+  const cerebrumLeft = new THREE.Mesh()
+  cerebrumLeft.copy(cerebrumRight)
+  cerebrumLeft.name = 'cerebrum-left'
+  cerebrumLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1)) // mirror geometry
+  cerebrumLeft.castShadow = true
+
+  const cerebellumRight = gltf.scene.getObjectByName('cerebellum-right') as THREE.Mesh
+
+  const cerebellumLeft = new THREE.Mesh()
+  cerebellumLeft.copy(cerebellumRight)
+  cerebellumLeft.name = 'cerebellum-left'
+  cerebellumLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
+
+  const rightHemisphere = new THREE.Group()
+  rightHemisphere.name = 'right-hemisphere'
+  rightHemisphere.add(cerebrumRight)
+  rightHemisphere.add(cerebellumRight)
+
+  const leftHemisphere = new THREE.Group()
+  leftHemisphere.name = 'left-hemisphere'
+  leftHemisphere.add(cerebrumLeft)
+  leftHemisphere.add(cerebellumLeft)
+
+  const brain = new THREE.Object3D()
+  brain.name = 'brain'
+  brain.add(leftHemisphere)
+  brain.add(rightHemisphere)
+  brain.scale.setScalar(3)
+  brain.position.set(0, 1.5, 0)
+
+  registerMeshControls(leftHemisphere)
+
+  logObject(brain)
+
+  return brain
 }
 
 function registerMeshControls(mesh: THREE.Object3D) {
@@ -135,3 +141,5 @@ function registerMeshControls(mesh: THREE.Object3D) {
 }
 
 main()
+  .then(() => console.log('👍'))
+  .catch((e) => console.error('le poop: ', e))

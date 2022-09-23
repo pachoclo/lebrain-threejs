@@ -17,5 +17,8 @@ function dumpObject(obj: THREE.Object3D, lines: string[] = [], isLast = true, pr
 }
 
 export function logObject(object: THREE.Object3D) {
-  console.log(dumpObject(object).join('\n'))
+  const isDevEnvironment = import.meta.env.DEV
+  if (isDevEnvironment) {
+    console.log(dumpObject(object).join('\n'))
+  }
 }
