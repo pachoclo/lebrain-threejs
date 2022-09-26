@@ -1,7 +1,9 @@
 import GUI from 'lil-gui'
 import * as THREE from 'three'
 import { MeshPhongMaterial, Object3D, PointLightHelper } from 'three'
+import { InteractionManager } from 'three.interactive'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { logObject } from './helpers/dump-object'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
@@ -13,12 +15,16 @@ async function main() {
   const grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
 
   const ambientLight = new THREE.AmbientLight('orange', 0.2)
+
   const pointLight01 = new THREE.PointLight('#69ffeb', 0.65, 100)
   pointLight01.position.set(-5, 3, 2)
+
   const pointLight01Helper = new PointLightHelper(pointLight01)
   pointLight01Helper.visible = false
+
   const pointLight02 = new THREE.PointLight('#ffe9fc', 0.8, 100)
   pointLight02.position.set(5, 3, 3)
+
   const pointLight02Helper = new PointLightHelper(pointLight02)
   pointLight02Helper.visible = false
 
@@ -38,11 +44,18 @@ async function main() {
   const canvas: HTMLElement = document.querySelector(`canvas#${CANVAS_ID}`)!
 
   const controls = new OrbitControls(camera, canvas)
+  controls.autoRotateSpeed = 5
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
 
+  const interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
+
+  const stats = Stats()
+  document.body.appendChild(stats.dom)
+
   function renderLoop() {
     requestAnimationFrame(renderLoop)
+    stats.update()
 
     // animation goes here
 
@@ -61,13 +74,24 @@ async function main() {
       camera.updateProjectionMatrix()
     }
 
+    interactionManager.update()
+
     renderer.render(scene, camera)
   }
 
-  renderLoop()
-
   brain = await makeBrain()
+
+  interactionManager.add(brain)
   scene.add(brain)
+
+  const removeLeftHemisphere = () => {
+    const leftHemisphere = brain.getObjectByName('left-hemisphere')
+    leftHemisphere?.removeFromParent()
+    brain.removeEventListener('mouseover', removeLeftHemisphere)
+  }
+  brain.addEventListener('mouseover', removeLeftHemisphere)
+
+  renderLoop()
 
   // GUI
   {
@@ -173,5 +197,5 @@ function registerMeshControls(mesh: THREE.Object3D) {
 }
 
 main()
-  .then(() => console.log('👍'))
+  .then(() => console.log('🧠 -> 👍'))
   .catch((e) => console.error('le poop: ', e))
