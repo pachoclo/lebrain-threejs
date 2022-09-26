@@ -92,7 +92,7 @@ async function main() {
 
     const ambientLightControls = lightsControls.addFolder('Ambient Light')
     ambientLightControls.addColor(ambientLight, 'color')
-    ambientLightControls.add(ambientLight, 'intensity', 0, 2, 0.2).name('helper')
+    ambientLightControls.add(ambientLight, 'intensity', 0, 2, 0.05).name('helper')
     ambientLightControls.close()
   }
 }
