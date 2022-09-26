@@ -42,6 +42,8 @@ async function main() {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
 
   function renderLoop() {
+    requestAnimationFrame(renderLoop)
+
     // animation goes here
 
     if (brain) {
@@ -60,9 +62,9 @@ async function main() {
     }
 
     renderer.render(scene, camera)
-    requestAnimationFrame(renderLoop)
   }
-  requestAnimationFrame(renderLoop)
+
+  renderLoop()
 
   brain = await makeBrain()
   scene.add(brain)
@@ -142,28 +144,24 @@ async function makeBrain() {
 
 function registerMeshControls(mesh: THREE.Object3D) {
   const originalPosition = mesh.position.clone()
+  const stepSize = 0.1
 
   document.addEventListener('keydown', (event: KeyboardEvent) => {
-    const stepSize = 0.1
     switch (event.key) {
       case 'ArrowLeft': {
-        const currentPosition = mesh.position
-        mesh.position.set(currentPosition.x - stepSize, currentPosition.y, currentPosition.z)
+        mesh.translateX(-stepSize)
         break
       }
       case 'ArrowRight': {
-        const currentPosition = mesh.position
-        mesh.position.set(currentPosition.x + stepSize, currentPosition.y, currentPosition.z)
+        mesh.translateX(stepSize)
         break
       }
       case 'ArrowUp': {
-        const currentPosition = mesh.position
-        mesh.position.set(currentPosition.x, currentPosition.y, currentPosition.z - stepSize)
+        mesh.translateZ(-stepSize)
         break
       }
       case 'ArrowDown': {
-        const currentPosition = mesh.position
-        mesh.position.set(currentPosition.x, currentPosition.y, currentPosition.z + stepSize)
+        mesh.translateZ(stepSize)
         break
       }
       case 'r': {
