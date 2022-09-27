@@ -17,8 +17,8 @@ type Meshes = {
   rightHemisphere: THREE.Object3D
   cerebrum: THREE.Mesh
   cerebellum: THREE.Mesh
-  boundingGeometryLeft: THREE.Mesh
-  boundingGeometryRight: THREE.Mesh
+  boundingMeshLeft: THREE.Mesh
+  boundingMeshRight: THREE.Mesh
 }
 
 type Lights = {
@@ -91,14 +91,14 @@ async function main() {
   scene.add(grid)
   scene.add(meshes.brain)
 
-  interactionManager.add(meshes.boundingGeometryLeft)
-  interactionManager.add(meshes.boundingGeometryRight)
+  interactionManager.add(meshes.boundingMeshLeft)
+  interactionManager.add(meshes.boundingMeshRight)
 
-  meshes.boundingGeometryLeft.addEventListener('click', (event) => {
+  meshes.boundingMeshLeft.addEventListener('click', (event) => {
     event.stopPropagation()
     console.log('Clicked on the Left hemisphere 👉🧠')
   })
-  meshes.boundingGeometryRight.addEventListener('click', (event) => {
+  meshes.boundingMeshRight.addEventListener('click', (event) => {
     event.stopPropagation()
     console.log('Clicked on the Right hemisphere 🧠👈')
   })
@@ -161,8 +161,8 @@ async function makeMeshes(): Promise<Meshes> {
   leftHemisphere.add(cerebrumLeft)
   leftHemisphere.add(cerebellumLeft)
 
-  const boundingGeometryRight = gltf.scene.getObjectByName('bounding-box') as THREE.Mesh
-  boundingGeometryRight.material = new MeshPhongMaterial({
+  const boundingMeshRight = gltf.scene.getObjectByName('bounding-mesh') as THREE.Mesh
+  boundingMeshRight.material = new MeshPhongMaterial({
     flatShading: true,
     visible: false,
     opacity: 0.5,
@@ -170,12 +170,12 @@ async function makeMeshes(): Promise<Meshes> {
     color: 'green',
     shininess: 200,
   })
-  rightHemisphere.add(boundingGeometryRight)
+  rightHemisphere.add(boundingMeshRight)
 
-  const boundingGeometryLeft = new THREE.Mesh()
-  boundingGeometryLeft.copy(boundingGeometryRight)
-  boundingGeometryLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
-  boundingGeometryLeft.material = new MeshPhongMaterial({
+  const boundingMeshLeft = new THREE.Mesh()
+  boundingMeshLeft.copy(boundingMeshRight)
+  boundingMeshLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
+  boundingMeshLeft.material = new MeshPhongMaterial({
     flatShading: true,
     visible: false,
     opacity: 0.5,
@@ -183,7 +183,7 @@ async function makeMeshes(): Promise<Meshes> {
     color: 'blue',
     shininess: 200,
   })
-  leftHemisphere.add(boundingGeometryLeft)
+  leftHemisphere.add(boundingMeshLeft)
 
   const brain = new THREE.Object3D()
   brain.name = 'brain'
@@ -202,8 +202,8 @@ async function makeMeshes(): Promise<Meshes> {
     cerebellum: cerebellumRight,
     leftHemisphere,
     rightHemisphere,
-    boundingGeometryLeft,
-    boundingGeometryRight,
+    boundingMeshLeft,
+    boundingMeshRight,
   }
 }
 
@@ -232,11 +232,9 @@ function makeGUI() {
   ambientLightControls.add(lights.ambientLight, 'intensity', 0, 2, 0.05).name('helper')
   ambientLightControls.close()
 
-  const boundingGeometryControls = gui.addFolder('Bounding Geometry')
-  boundingGeometryControls.add(meshes.boundingGeometryLeft.material, 'visible').name('Left visible')
-  boundingGeometryControls
-    .add(meshes.boundingGeometryRight.material, 'visible')
-    .name('Right visible')
+  const boundingGeometryControls = gui.addFolder('Bounding Meshes')
+  boundingGeometryControls.add(meshes.boundingMeshLeft.material, 'visible').name('Left visible')
+  boundingGeometryControls.add(meshes.boundingMeshRight.material, 'visible').name('Right visible')
   boundingGeometryControls.close()
 
   return gui
