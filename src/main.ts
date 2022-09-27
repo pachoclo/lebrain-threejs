@@ -1,6 +1,6 @@
 import GUI from 'lil-gui'
 import * as THREE from 'three'
-import { MeshPhongMaterial, Object3D, PointLightHelper } from 'three'
+import { MeshPhongMaterial, PointLightHelper } from 'three'
 import { InteractionManager } from 'three.interactive'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -11,117 +11,126 @@ import './style.css'
 
 const CANVAS_ID = 'lebrain'
 
-async function main() {
-  const grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
-
-  const ambientLight = new THREE.AmbientLight('orange', 0.2)
-
-  const pointLight01 = new THREE.PointLight('#69ffeb', 0.65, 100)
-  pointLight01.position.set(-5, 3, 2)
-
-  const pointLight01Helper = new PointLightHelper(pointLight01)
-  pointLight01Helper.visible = false
-
-  const pointLight02 = new THREE.PointLight('#ffe9fc', 0.8, 100)
-  pointLight02.position.set(5, 3, 3)
-
-  const pointLight02Helper = new PointLightHelper(pointLight02)
-  pointLight02Helper.visible = false
-
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200)
-  camera.position.set(5.3, 1.6, 5.6)
-
-  const scene = new THREE.Scene()
-  scene.add(grid)
-  scene.add(ambientLight)
-  scene.add(pointLight01)
-  scene.add(pointLight02)
-  scene.add(pointLight01Helper)
-  scene.add(pointLight02Helper)
-
-  let brain: Object3D
-
-  const canvas: HTMLElement = document.querySelector(`canvas#${CANVAS_ID}`)!
-
-  const controls = new OrbitControls(camera, canvas)
-  controls.autoRotateSpeed = 5
-
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
-
-  const interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
-
-  const stats = Stats()
-  document.body.appendChild(stats.dom)
-
-  function renderLoop() {
-    requestAnimationFrame(renderLoop)
-    stats.update()
-
-    // animation goes here
-
-    if (brain) {
-      // brain.rotateY(Math.PI / 500)
-
-      const { x: ctrlTargetX, y: ctrlTargetY, z: ctrlTargetZ } = brain.position
-      controls.target.set(ctrlTargetX, ctrlTargetY, ctrlTargetZ)
-      controls.update()
-    }
-
-    // responsiveness
-    if (resizeRendererToDisplaySize(renderer)) {
-      const canvas = renderer.domElement
-      camera.aspect = canvas.clientWidth / canvas.clientHeight
-      camera.updateProjectionMatrix()
-    }
-
-    interactionManager.update()
-
-    renderer.render(scene, camera)
-  }
-
-  brain = await makeBrain()
-
-  interactionManager.add(brain)
-  scene.add(brain)
-
-  const removeLeftHemisphere = () => {
-    const leftHemisphere = brain.getObjectByName('left-hemisphere')
-    leftHemisphere?.removeFromParent()
-    brain.removeEventListener('mouseover', removeLeftHemisphere)
-  }
-  brain.addEventListener('mouseover', removeLeftHemisphere)
-
-  renderLoop()
-
-  // GUI
-  {
-    const gui = new GUI({ title: '⚙️ Config' })
-
-    const cameraControls = gui.addFolder('Camera')
-    cameraControls.add(controls, 'autoRotate')
-    cameraControls.close()
-
-    const lightsControls = gui.addFolder('Lights')
-    lightsControls.close()
-
-    const pointLight01Controls = lightsControls.addFolder('Point Light 01')
-    pointLight01Controls.add(pointLight01Helper, 'visible').name('helper')
-    pointLight01Controls.addColor(pointLight01, 'color')
-    pointLight01Controls.close()
-
-    const pointLight02Controls = lightsControls.addFolder('Point Light 02')
-    pointLight02Controls.add(pointLight02Helper, 'visible').name('helper')
-    pointLight02Controls.addColor(pointLight02, 'color')
-    pointLight02Controls.close()
-
-    const ambientLightControls = lightsControls.addFolder('Ambient Light')
-    ambientLightControls.addColor(ambientLight, 'color')
-    ambientLightControls.add(ambientLight, 'intensity', 0, 2, 0.05).name('helper')
-    ambientLightControls.close()
-  }
+type Meshes = {
+  brain: THREE.Object3D
+  leftHemisphere: THREE.Object3D
+  rightHemisphere: THREE.Object3D
+  cerebrum: THREE.Mesh
+  cerebellum: THREE.Mesh
+  boundingGeometryLeft: THREE.Mesh
+  boundingGeometryRight: THREE.Mesh
 }
 
-async function makeBrain() {
+type Lights = {
+  ambientLight: THREE.AmbientLight
+  pointLight01: THREE.PointLight
+  pointLight02: THREE.PointLight
+}
+
+type LightHelpers = {
+  pointLight01Helper: PointLightHelper
+  pointLight02Helper: PointLightHelper
+}
+
+let grid: THREE.GridHelper
+let lights: Lights
+let camera: THREE.PerspectiveCamera
+let canvas: HTMLElement
+let cameraOrbitControls: OrbitControls
+let renderer: THREE.WebGLRenderer
+let meshes: Meshes
+let scene: THREE.Scene
+let interactionManager: InteractionManager
+let stats: Stats
+let lightHelpers: LightHelpers
+
+async function initialize() {
+  grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
+
+  lights = {
+    ambientLight: new THREE.AmbientLight('orange', 0.2),
+    pointLight01: new THREE.PointLight('#69ffeb', 0.65, 100),
+    pointLight02: new THREE.PointLight('#ffe9fc', 0.8, 100),
+  }
+
+  lights.pointLight01.position.set(-5, 3, 2)
+  lights.pointLight02.position.set(5, 3, 3)
+
+  lightHelpers = {
+    pointLight01Helper: new PointLightHelper(lights.pointLight01),
+    pointLight02Helper: new PointLightHelper(lights.pointLight02),
+  }
+
+  lightHelpers.pointLight01Helper.visible = false
+  lightHelpers.pointLight02Helper.visible = false
+
+  camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200)
+  camera.position.set(5.3, 1.6, 5.6)
+
+  canvas = document.querySelector(`canvas#${CANVAS_ID}`)!
+
+  cameraOrbitControls = new OrbitControls(camera, canvas)
+  cameraOrbitControls.autoRotateSpeed = 5
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+
+  interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
+
+  stats = Stats()
+
+  meshes = await makeMeshes()
+
+  scene = new THREE.Scene()
+}
+
+async function main() {
+  await initialize()
+
+  Object.values(lights).forEach((light) => scene.add(light))
+  Object.values(lightHelpers).forEach((lightHelper) => scene.add(lightHelper))
+  scene.add(grid)
+  scene.add(meshes.brain)
+
+  interactionManager.add(meshes.boundingGeometryLeft)
+  interactionManager.add(meshes.boundingGeometryRight)
+
+  meshes.boundingGeometryLeft.addEventListener('click', (event) => {
+    event.stopPropagation()
+    console.log('Clicked on the Left hemisphere 👉🧠')
+  })
+  meshes.boundingGeometryRight.addEventListener('click', (event) => {
+    event.stopPropagation()
+    console.log('Clicked on the Right hemisphere 🧠👈')
+  })
+
+  document.body.appendChild(stats.dom)
+
+  makeGUI()
+
+  animate()
+}
+
+function animate() {
+  requestAnimationFrame(animate)
+  stats.update()
+
+  // responsiveness
+  if (resizeRendererToDisplaySize(renderer)) {
+    const canvas = renderer.domElement
+    camera.aspect = canvas.clientWidth / canvas.clientHeight
+    camera.updateProjectionMatrix()
+  }
+
+  // make sure the camera is always looking at the brain
+  const { x: ctrlTargetX, y: ctrlTargetY, z: ctrlTargetZ } = meshes.brain.position
+  cameraOrbitControls.target.set(ctrlTargetX, ctrlTargetY, ctrlTargetZ)
+  cameraOrbitControls.update()
+
+  interactionManager.update()
+  renderer.render(scene, camera)
+}
+
+async function makeMeshes(): Promise<Meshes> {
   const gltfLoader = new GLTFLoader()
   const gltf = await gltfLoader.loadAsync('/models/brain_sliced.glb')
   document.querySelector('#loader')?.remove()
@@ -152,6 +161,30 @@ async function makeBrain() {
   leftHemisphere.add(cerebrumLeft)
   leftHemisphere.add(cerebellumLeft)
 
+  const boundingGeometryRight = gltf.scene.getObjectByName('bounding-box') as THREE.Mesh
+  boundingGeometryRight.material = new MeshPhongMaterial({
+    flatShading: true,
+    visible: false,
+    opacity: 0.5,
+    transparent: true,
+    color: 'green',
+    shininess: 200,
+  })
+  rightHemisphere.add(boundingGeometryRight)
+
+  const boundingGeometryLeft = new THREE.Mesh()
+  boundingGeometryLeft.copy(boundingGeometryRight)
+  boundingGeometryLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
+  boundingGeometryLeft.material = new MeshPhongMaterial({
+    flatShading: true,
+    visible: false,
+    opacity: 0.5,
+    transparent: true,
+    color: 'blue',
+    shininess: 200,
+  })
+  leftHemisphere.add(boundingGeometryLeft)
+
   const brain = new THREE.Object3D()
   brain.name = 'brain'
   brain.add(leftHemisphere)
@@ -163,7 +196,50 @@ async function makeBrain() {
 
   logObject(brain)
 
-  return brain
+  return {
+    brain,
+    cerebrum: cerebrumRight,
+    cerebellum: cerebellumRight,
+    leftHemisphere,
+    rightHemisphere,
+    boundingGeometryLeft,
+    boundingGeometryRight,
+  }
+}
+
+function makeGUI() {
+  const gui = new GUI({ title: '⚙️ Config' })
+
+  const cameraControls = gui.addFolder('Camera')
+  cameraControls.add(cameraOrbitControls, 'autoRotate')
+  cameraControls.close()
+
+  const lightsControls = gui.addFolder('Lights')
+  lightsControls.close()
+
+  const pointLight01Controls = lightsControls.addFolder('Point Light 01')
+  pointLight01Controls.add(lightHelpers.pointLight01Helper, 'visible').name('helper')
+  pointLight01Controls.addColor(lights.pointLight01, 'color')
+  pointLight01Controls.close()
+
+  const pointLight02Controls = lightsControls.addFolder('Point Light 02')
+  pointLight02Controls.add(lightHelpers.pointLight02Helper, 'visible').name('helper')
+  pointLight02Controls.addColor(lights.pointLight02, 'color')
+  pointLight02Controls.close()
+
+  const ambientLightControls = lightsControls.addFolder('Ambient Light')
+  ambientLightControls.addColor(lights.ambientLight, 'color')
+  ambientLightControls.add(lights.ambientLight, 'intensity', 0, 2, 0.05).name('helper')
+  ambientLightControls.close()
+
+  const boundingGeometryControls = gui.addFolder('Bounding Geometry')
+  boundingGeometryControls.add(meshes.boundingGeometryLeft.material, 'visible').name('Left visible')
+  boundingGeometryControls
+    .add(meshes.boundingGeometryRight.material, 'visible')
+    .name('Right visible')
+  boundingGeometryControls.close()
+
+  return gui
 }
 
 function registerMeshControls(mesh: THREE.Object3D) {
