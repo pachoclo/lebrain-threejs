@@ -1,5 +1,5 @@
 # Le Brain
 
-Interactive brain in Three.js.
+Interactive brain in Three.js
 
-![screenshot](/doc/screenshot.png)
+<img src="./doc/screenshot.png" height="400">
