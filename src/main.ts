@@ -278,6 +278,7 @@ function makeGUI() {
       }
     })
   })
+  castShadowsControls.close()
 
   return gui
 }
