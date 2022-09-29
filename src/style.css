@@ -70,9 +70,9 @@ canvas {
   left: 20px;
   min-width: 100px;
   max-width: 360px;
-  height: 40px;
-  background-color: #232c35;
-  border: 1px solid teal;
+  height: 32px;
+  background-color: #2c343c;
+  border: 1px solid black;
   border-radius: 20px;
   display: flex;
   justify-content: center;

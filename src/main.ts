@@ -1,6 +1,6 @@
 import GUI from 'lil-gui'
 import * as THREE from 'three'
-import { MeshPhongMaterial, PointLightHelper } from 'three'
+import { DirectionalLightHelper, Material, MeshPhongMaterial, PointLightHelper } from 'three'
 import { InteractionManager } from 'three.interactive'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -62,6 +62,12 @@ async function init() {
 
   lights.pointLight01.position.set(-5, 3, 2)
   lights.pointLight02.position.set(5, 3, 3)
+  lights.pointLight02.castShadow = true
+  lights.pointLight02.shadow.radius = 15
+  lights.pointLight02.shadow.camera.near = 0.1
+  lights.pointLight02.shadow.camera.far = 400
+  lights.pointLight02.shadow.mapSize.width = 4000
+  lights.pointLight02.shadow.mapSize.height = 4000
 
   lightHelpers = {
     pointLight01Helper: new PointLightHelper(lights.pointLight01),
@@ -170,6 +176,11 @@ async function makeMeshes(): Promise<Meshes> {
   rightHemisphere.name = 'right-hemisphere'
   rightHemisphere.add(cerebrumRight)
   rightHemisphere.add(cerebellumRight)
+  rightHemisphere.children.forEach((child) => {
+    if (child.type === THREE.Mesh.name) {
+      child.receiveShadow = true
+    }
+  })
 
   const leftHemisphere = new THREE.Group()
   leftHemisphere.name = 'left-hemisphere'
@@ -225,7 +236,8 @@ async function makeMeshes(): Promise<Meshes> {
 }
 
 function makeGUI() {
-  const gui = new GUI({ title: '⚙️ Config' })
+  const gui = new GUI({ title: '⚙️ Settings' })
+  gui.close()
 
   const cameraControls = gui.addFolder('Camera')
   cameraControls.add(cameraOrbitControls, 'autoRotate')
@@ -253,6 +265,19 @@ function makeGUI() {
   boundingGeometryControls.add(meshes.boundingMeshLeft.material, 'visible').name('Left visible')
   boundingGeometryControls.add(meshes.boundingMeshRight.material, 'visible').name('Right visible')
   boundingGeometryControls.close()
+
+  const castShadows = {
+    enabled: false,
+  }
+
+  const castShadowsControls = gui.addFolder('Cast Shadows - Left Hem.')
+  castShadowsControls.add(castShadows, 'enabled').onChange((enabled: boolean) => {
+    meshes.leftHemisphere.children.forEach((child) => {
+      if (child.type === THREE.Mesh.name) {
+        child.castShadow = enabled
+      }
+    })
+  })
 
   return gui
 }
@@ -302,7 +327,6 @@ function Debuggy() {
 
   const display = (event: THREE.Event, msg?: string) => {
     cancelTimeout()
-    console.log(el)
     const name: string = event.target.parent.name
       .split('-')
       .map((word: string) => word.at(0)?.toUpperCase() + word.slice(1))
