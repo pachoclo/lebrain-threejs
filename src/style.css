@@ -64,21 +64,32 @@ canvas {
   margin-left: -70px;
 }
 
-#debuggy {
+.debuggy {
   position: fixed;
-  top: 60px;
-  left: 16px;
-  min-width: 240px;
+  bottom: 20px;
+  left: 20px;
+  min-width: 100px;
   max-width: 360px;
-  background-color: #161a21;
+  height: 40px;
+  background-color: #232c35;
   border: 1px solid teal;
   border-radius: 20px;
-  text-align: center;
-  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 20px;
+  opacity: 1;
+  transition: all 0.4s;
+  overflow: hidden;
 }
 
 .hidden {
-  display: none;
+  opacity: 0;
+  height: 0px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  font-size: 6px;
 }
 
 #brain-icon {
@@ -129,5 +140,23 @@ button:focus-visible {
   }
   100% {
     transform: rotateY(0deg);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }

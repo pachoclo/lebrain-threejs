@@ -44,6 +44,13 @@ let interactionManager: InteractionManager
 let stats: Stats
 let lightHelpers: LightHelpers
 
+const debuggy = Debuggy()
+
+init()
+  .then(() => main())
+  .then(() => console.log('🧠 -> 👍'))
+  .catch((e) => console.error('le poop: ', e))
+
 async function init() {
   grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
 
@@ -74,6 +81,8 @@ async function init() {
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
   renderer.setPixelRatio(window.devicePixelRatio)
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
 
@@ -93,17 +102,20 @@ async function main() {
   interactionManager.add(meshes.boundingMeshLeft)
   interactionManager.add(meshes.boundingMeshRight)
 
-  meshes.boundingMeshLeft.addEventListener('click', (event) => {
+  const handleHemisphereClick = (event: THREE.Event) => {
     event.stopPropagation()
-    const debuggy = document.querySelector('#debuggy')!
-    debuggy.textContent = 'Clicked on the Left hemisphere 👉🧠'
-    debuggy.classList.toggle('hidden')
-  })
+    debuggy.display(event)
+  }
+  meshes.boundingMeshRight.addEventListener('mouseover', handleHemisphereClick)
   meshes.boundingMeshRight.addEventListener('click', (event) => {
     event.stopPropagation()
-    const debuggy = document.querySelector('#debuggy')!
-    debuggy.textContent = 'Clicked on the Right hemisphere 🧠👈'
-    debuggy.classList.toggle('hidden')
+  })
+  meshes.boundingMeshLeft.addEventListener('mouseover', handleHemisphereClick)
+
+  meshes.boundingMeshLeft.addEventListener('click', () => {
+    interactionManager.remove(meshes.boundingMeshLeft)
+    meshes.leftHemisphere.remove(meshes.boundingMeshLeft)
+    meshes.leftHemisphere.parent?.remove(meshes.leftHemisphere)
   })
 
   document.body.appendChild(stats.dom)
@@ -165,6 +177,7 @@ async function makeMeshes(): Promise<Meshes> {
   leftHemisphere.add(cerebellumLeft)
 
   const boundingMeshRight = gltf.scene.getObjectByName('bounding-mesh') as THREE.Mesh
+  boundingMeshRight.name = 'bounding-mesh-right-hemisphere'
   boundingMeshRight.material = new MeshPhongMaterial({
     flatShading: true,
     visible: false,
@@ -177,6 +190,7 @@ async function makeMeshes(): Promise<Meshes> {
 
   const boundingMeshLeft = new THREE.Mesh()
   boundingMeshLeft.copy(boundingMeshRight)
+  boundingMeshLeft.name = 'bounding-mesh-left-hemisphere'
   boundingMeshLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
   boundingMeshLeft.material = new MeshPhongMaterial({
     flatShading: true,
@@ -232,7 +246,7 @@ function makeGUI() {
 
   const ambientLightControls = lightsControls.addFolder('Ambient Light')
   ambientLightControls.addColor(lights.ambientLight, 'color')
-  ambientLightControls.add(lights.ambientLight, 'intensity', 0, 2, 0.05).name('helper')
+  ambientLightControls.add(lights.ambientLight, 'intensity', 0, 2, 0.05)
   ambientLightControls.close()
 
   const boundingGeometryControls = gui.addFolder('Bounding Meshes')
@@ -273,7 +287,41 @@ function registerMeshControls(mesh: THREE.Object3D) {
   })
 }
 
-init()
-  .then(() => main())
-  .then(() => console.log('🧠 -> 👍'))
-  .catch((e) => console.error('le poop: ', e))
+function Debuggy() {
+  const el = document.querySelector('.debuggy')! as HTMLElement
+  let isHidden = true
+  let timeoutId: number | null = null
+
+  const hide = () => {
+    cancelTimeout()
+    if (!isHidden) {
+      el.classList.add('hidden')
+      isHidden = true
+    }
+  }
+
+  const display = (event: THREE.Event, msg?: string) => {
+    cancelTimeout()
+    console.log(el)
+    const name: string = event.target.parent.name
+      .split('-')
+      .map((word: string) => word.at(0)?.toUpperCase() + word.slice(1))
+      .join(' ')
+    el.textContent = name + (msg ? ` ${msg}` : '')
+    if (isHidden) {
+      el.classList.remove('hidden')
+      isHidden = false
+    }
+    timeoutId = setTimeout(hide, 3000)
+  }
+
+  const cancelTimeout = () => {
+    timeoutId && clearTimeout(timeoutId)
+    timeoutId = null
+  }
+
+  return {
+    display,
+    hide,
+  }
+}
