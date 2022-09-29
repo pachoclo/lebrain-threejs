@@ -44,7 +44,7 @@ let interactionManager: InteractionManager
 let stats: Stats
 let lightHelpers: LightHelpers
 
-const debuggy = Debuggy()
+const toaster = Toaster()
 
 init()
   .then(() => main())
@@ -110,7 +110,7 @@ async function main() {
 
   const handleHemisphereClick = (event: THREE.Event) => {
     event.stopPropagation()
-    debuggy.display(event)
+    toaster.display(event)
   }
   meshes.boundingMeshRight.addEventListener('mouseover', handleHemisphereClick)
   meshes.boundingMeshRight.addEventListener('click', (event) => {
@@ -313,7 +313,7 @@ function registerMeshControls(mesh: THREE.Object3D) {
   })
 }
 
-function Debuggy() {
+function Toaster() {
   const el = document.querySelector('.debuggy')! as HTMLElement
   let isHidden = true
   let timeoutId: number | null = null
