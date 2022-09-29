@@ -64,6 +64,23 @@ canvas {
   margin-left: -70px;
 }
 
+#debuggy {
+  position: fixed;
+  top: 60px;
+  left: 16px;
+  min-width: 240px;
+  max-width: 360px;
+  background-color: #161a21;
+  border: 1px solid teal;
+  border-radius: 20px;
+  text-align: center;
+  padding: 16px;
+}
+
+.hidden {
+  display: none;
+}
+
 #brain-icon {
   display: inline-block;
   animation-name: flip;

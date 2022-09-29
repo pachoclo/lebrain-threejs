@@ -44,7 +44,7 @@ let interactionManager: InteractionManager
 let stats: Stats
 let lightHelpers: LightHelpers
 
-async function initialize() {
+async function init() {
   grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
 
   lights = {
@@ -73,6 +73,7 @@ async function initialize() {
   cameraOrbitControls.autoRotateSpeed = 5
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+  renderer.setPixelRatio(window.devicePixelRatio)
 
   interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
 
@@ -84,8 +85,6 @@ async function initialize() {
 }
 
 async function main() {
-  await initialize()
-
   Object.values(lights).forEach((light) => scene.add(light))
   Object.values(lightHelpers).forEach((lightHelper) => scene.add(lightHelper))
   scene.add(grid)
@@ -96,11 +95,15 @@ async function main() {
 
   meshes.boundingMeshLeft.addEventListener('click', (event) => {
     event.stopPropagation()
-    console.log('Clicked on the Left hemisphere 👉🧠')
+    const debuggy = document.querySelector('#debuggy')!
+    debuggy.textContent = 'Clicked on the Left hemisphere 👉🧠'
+    debuggy.classList.toggle('hidden')
   })
   meshes.boundingMeshRight.addEventListener('click', (event) => {
     event.stopPropagation()
-    console.log('Clicked on the Right hemisphere 🧠👈')
+    const debuggy = document.querySelector('#debuggy')!
+    debuggy.textContent = 'Clicked on the Right hemisphere 🧠👈'
+    debuggy.classList.toggle('hidden')
   })
 
   document.body.appendChild(stats.dom)
@@ -270,6 +273,7 @@ function registerMeshControls(mesh: THREE.Object3D) {
   })
 }
 
-main()
+init()
+  .then(() => main())
   .then(() => console.log('🧠 -> 👍'))
   .catch((e) => console.error('le poop: ', e))
