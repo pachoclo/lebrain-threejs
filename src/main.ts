@@ -198,7 +198,7 @@ async function makeMeshes(): Promise<Meshes> {
   rightHemisphere.add(cerebrumRight)
   rightHemisphere.add(cerebellumRight)
   rightHemisphere.children.forEach((child) => {
-    if (child.type === THREE.Mesh.name) {
+    if (child.type === 'Mesh') {
       child.receiveShadow = true
     }
   })
@@ -207,6 +207,11 @@ async function makeMeshes(): Promise<Meshes> {
   leftHemisphere.name = 'left-hemisphere'
   leftHemisphere.add(cerebrumLeft)
   leftHemisphere.add(cerebellumLeft)
+  leftHemisphere.children.forEach((child) => {
+    if (child.type === 'Mesh') {
+      child.castShadow = true
+    }
+  })
 
   const boundingMeshRight = gltf.scene.getObjectByName('bounding-mesh') as THREE.Mesh
   boundingMeshRight.name = 'bounding-mesh-right-hemisphere'
@@ -287,14 +292,13 @@ function makeGUI() {
   boundingGeometryControls.add(meshes.boundingMeshRight.material, 'visible').name('Right visible')
   boundingGeometryControls.close()
 
-  const castShadows = {
-    enabled: false,
+  let castShadows = {
+    enabled: true,
   }
-
   const castShadowsControls = gui.addFolder('Cast Shadows - Left Hem.')
   castShadowsControls.add(castShadows, 'enabled').onChange((enabled: boolean) => {
     meshes.leftHemisphere.children.forEach((child) => {
-      if (child.type === THREE.Mesh.name) {
+      if (child.type === 'Mesh') {
         child.castShadow = enabled
       }
     })
