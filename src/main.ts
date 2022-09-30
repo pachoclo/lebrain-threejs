@@ -7,6 +7,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { logObject } from './helpers/dump-object'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
+import { soundLibrary } from './sound-library'
 import './style.css'
 
 const CANVAS_ID = 'lebrain'
@@ -121,7 +122,9 @@ async function main() {
   })
   meshes.boundingMeshLeft.addEventListener('mouseover', handleHemisphereClick)
 
-  meshes.boundingMeshLeft.addEventListener('click', () => {
+  meshes.boundingMeshLeft.addEventListener('click', (event) => {
+    event?.stopPropagation()
+    soundLibrary.squish.play()
     interactionManager.remove(meshes.boundingMeshLeft)
     meshes.leftHemisphere.remove(meshes.boundingMeshLeft)
     meshes.leftHemisphere.parent?.remove(meshes.leftHemisphere)
@@ -376,7 +379,7 @@ function Toaster() {
 
 function updateBrainPosition() {
   const elapsed = clock.getElapsedTime()
-  const bounceSpeed = 1.3
+  const bounceSpeed = 1.5
   const amplitude = 0.4
   meshes.leftHemisphere.position.y = Math.abs(Math.sin(elapsed * bounceSpeed) * amplitude)
 }
