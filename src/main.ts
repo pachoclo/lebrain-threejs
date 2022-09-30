@@ -43,8 +43,16 @@ let scene: THREE.Scene
 let interactionManager: InteractionManager
 let stats: Stats
 let lightHelpers: LightHelpers
+let clock: THREE.Clock
 
-async function initialize() {
+const toaster = Toaster()
+
+init()
+  .then(() => main())
+  .then(() => console.log('🧠 -> 👍'))
+  .catch((e) => console.error('le poop: ', e))
+
+async function init() {
   grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
 
   lights = {
@@ -55,6 +63,12 @@ async function initialize() {
 
   lights.pointLight01.position.set(-5, 3, 2)
   lights.pointLight02.position.set(5, 3, 3)
+  lights.pointLight02.castShadow = true
+  lights.pointLight02.shadow.radius = 15
+  lights.pointLight02.shadow.camera.near = 0.1
+  lights.pointLight02.shadow.camera.far = 400
+  lights.pointLight02.shadow.mapSize.width = 4000
+  lights.pointLight02.shadow.mapSize.height = 4000
 
   lightHelpers = {
     pointLight01Helper: new PointLightHelper(lights.pointLight01),
@@ -73,6 +87,9 @@ async function initialize() {
   cameraOrbitControls.autoRotateSpeed = 5
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+  renderer.setPixelRatio(window.devicePixelRatio)
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
 
@@ -81,11 +98,11 @@ async function initialize() {
   meshes = await makeMeshes()
 
   scene = new THREE.Scene()
+
+  clock = new THREE.Clock()
 }
 
 async function main() {
-  await initialize()
-
   Object.values(lights).forEach((light) => scene.add(light))
   Object.values(lightHelpers).forEach((lightHelper) => scene.add(lightHelper))
   scene.add(grid)
@@ -94,13 +111,20 @@ async function main() {
   interactionManager.add(meshes.boundingMeshLeft)
   interactionManager.add(meshes.boundingMeshRight)
 
-  meshes.boundingMeshLeft.addEventListener('click', (event) => {
+  const handleHemisphereClick = (event: THREE.Event) => {
     event.stopPropagation()
-    console.log('Clicked on the Left hemisphere 👉🧠')
-  })
+    toaster.display(event)
+  }
+  meshes.boundingMeshRight.addEventListener('mouseover', handleHemisphereClick)
   meshes.boundingMeshRight.addEventListener('click', (event) => {
     event.stopPropagation()
-    console.log('Clicked on the Right hemisphere 🧠👈')
+  })
+  meshes.boundingMeshLeft.addEventListener('mouseover', handleHemisphereClick)
+
+  meshes.boundingMeshLeft.addEventListener('click', () => {
+    interactionManager.remove(meshes.boundingMeshLeft)
+    meshes.leftHemisphere.remove(meshes.boundingMeshLeft)
+    meshes.leftHemisphere.parent?.remove(meshes.leftHemisphere)
   })
 
   document.body.appendChild(stats.dom)
@@ -108,11 +132,26 @@ async function main() {
   makeGUI()
 
   animate()
+
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      if (document.visibilityState === 'hidden') {
+        clock.stop()
+        console.log('⏸ animation paused')
+      } else if (document.visibilityState === 'visible') {
+        clock.start()
+        console.log('▶️ animation resumed')
+      }
+    },
+    false
+  )
 }
 
 function animate() {
-  requestAnimationFrame(animate)
   stats.update()
+
+  requestAnimationFrame(animate)
 
   // responsiveness
   if (resizeRendererToDisplaySize(renderer)) {
@@ -127,6 +166,9 @@ function animate() {
   cameraOrbitControls.update()
 
   interactionManager.update()
+
+  updateBrainPosition()
+
   renderer.render(scene, camera)
 }
 
@@ -155,13 +197,24 @@ async function makeMeshes(): Promise<Meshes> {
   rightHemisphere.name = 'right-hemisphere'
   rightHemisphere.add(cerebrumRight)
   rightHemisphere.add(cerebellumRight)
+  rightHemisphere.children.forEach((child) => {
+    if (child.type === 'Mesh') {
+      child.receiveShadow = true
+    }
+  })
 
   const leftHemisphere = new THREE.Group()
   leftHemisphere.name = 'left-hemisphere'
   leftHemisphere.add(cerebrumLeft)
   leftHemisphere.add(cerebellumLeft)
+  leftHemisphere.children.forEach((child) => {
+    if (child.type === 'Mesh') {
+      child.castShadow = true
+    }
+  })
 
   const boundingMeshRight = gltf.scene.getObjectByName('bounding-mesh') as THREE.Mesh
+  boundingMeshRight.name = 'bounding-mesh-right-hemisphere'
   boundingMeshRight.material = new MeshPhongMaterial({
     flatShading: true,
     visible: false,
@@ -174,6 +227,7 @@ async function makeMeshes(): Promise<Meshes> {
 
   const boundingMeshLeft = new THREE.Mesh()
   boundingMeshLeft.copy(boundingMeshRight)
+  boundingMeshLeft.name = 'bounding-mesh-left-hemisphere'
   boundingMeshLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
   boundingMeshLeft.material = new MeshPhongMaterial({
     flatShading: true,
@@ -208,7 +262,8 @@ async function makeMeshes(): Promise<Meshes> {
 }
 
 function makeGUI() {
-  const gui = new GUI({ title: '⚙️ Config' })
+  const gui = new GUI({ title: '⚙️ Settings' })
+  gui.close()
 
   const cameraControls = gui.addFolder('Camera')
   cameraControls.add(cameraOrbitControls, 'autoRotate')
@@ -229,13 +284,26 @@ function makeGUI() {
 
   const ambientLightControls = lightsControls.addFolder('Ambient Light')
   ambientLightControls.addColor(lights.ambientLight, 'color')
-  ambientLightControls.add(lights.ambientLight, 'intensity', 0, 2, 0.05).name('helper')
+  ambientLightControls.add(lights.ambientLight, 'intensity', 0, 2, 0.05)
   ambientLightControls.close()
 
   const boundingGeometryControls = gui.addFolder('Bounding Meshes')
   boundingGeometryControls.add(meshes.boundingMeshLeft.material, 'visible').name('Left visible')
   boundingGeometryControls.add(meshes.boundingMeshRight.material, 'visible').name('Right visible')
   boundingGeometryControls.close()
+
+  let castShadows = {
+    enabled: true,
+  }
+  const castShadowsControls = gui.addFolder('Cast Shadows - Left Hem.')
+  castShadowsControls.add(castShadows, 'enabled').onChange((enabled: boolean) => {
+    meshes.leftHemisphere.children.forEach((child) => {
+      if (child.type === 'Mesh') {
+        child.castShadow = enabled
+      }
+    })
+  })
+  castShadowsControls.close()
 
   return gui
 }
@@ -270,6 +338,44 @@ function registerMeshControls(mesh: THREE.Object3D) {
   })
 }
 
-main()
-  .then(() => console.log('🧠 -> 👍'))
-  .catch((e) => console.error('le poop: ', e))
+function Toaster() {
+  const el = document.querySelector('.debuggy')! as HTMLElement
+  let isHidden = true
+  let timeoutId: number | null = null
+
+  const hide = () => {
+    cancelTimeout()
+    if (!isHidden) {
+      el.classList.add('hidden')
+      isHidden = true
+    }
+  }
+
+  const display = (event: THREE.Event, msg?: string) => {
+    cancelTimeout()
+    const name: string = event.target.parent.name
+      .split('-')
+      .map((word: string) => word.at(0)?.toUpperCase() + word.slice(1))
+      .join(' ')
+    el.textContent = name + (msg ? ` ${msg}` : '')
+    if (isHidden) {
+      el.classList.remove('hidden')
+      isHidden = false
+    }
+    timeoutId = setTimeout(hide, 3000)
+  }
+
+  const cancelTimeout = () => {
+    timeoutId && clearTimeout(timeoutId)
+    timeoutId = null
+  }
+
+  return {
+    display,
+  }
+}
+
+function updateBrainPosition() {
+  const delta = clock.getDelta()
+  meshes.leftHemisphere.rotateY(delta * (Math.PI / 20)).translateZ(delta * 0.1)
+}
