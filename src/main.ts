@@ -133,19 +133,19 @@ async function main() {
 
   animate()
 
-  document.addEventListener(
-    'visibilitychange',
-    () => {
-      if (document.visibilityState === 'hidden') {
-        clock.stop()
-        console.log('⏸ animation paused')
-      } else if (document.visibilityState === 'visible') {
-        clock.start()
-        console.log('▶️ animation resumed')
-      }
-    },
-    false
-  )
+  // document.addEventListener(
+  //   'visibilitychange',
+  //   () => {
+  //     if (document.visibilityState === 'hidden') {
+  //       clock.stop()
+  //       console.log('⏸ animation paused')
+  //     } else if (document.visibilityState === 'visible') {
+  //       clock.start()
+  //       console.log('▶️ animation resumed')
+  //     }
+  //   },
+  //   false
+  // )
 }
 
 function animate() {
