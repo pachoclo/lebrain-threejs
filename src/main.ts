@@ -1,6 +1,6 @@
 import GUI from 'lil-gui'
 import * as THREE from 'three'
-import { DirectionalLightHelper, Material, MeshPhongMaterial, PointLightHelper } from 'three'
+import { MeshPhongMaterial, PointLightHelper } from 'three'
 import { InteractionManager } from 'three.interactive'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -43,6 +43,7 @@ let scene: THREE.Scene
 let interactionManager: InteractionManager
 let stats: Stats
 let lightHelpers: LightHelpers
+let clock: THREE.Clock
 
 const toaster = Toaster()
 
@@ -97,6 +98,8 @@ async function init() {
   meshes = await makeMeshes()
 
   scene = new THREE.Scene()
+
+  clock = new THREE.Clock()
 }
 
 async function main() {
@@ -129,11 +132,26 @@ async function main() {
   makeGUI()
 
   animate()
+
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      if (document.visibilityState === 'hidden') {
+        clock.stop()
+        console.log('⏸ animation paused')
+      } else if (document.visibilityState === 'visible') {
+        clock.start()
+        console.log('▶️ animation resumed')
+      }
+    },
+    false
+  )
 }
 
 function animate() {
-  requestAnimationFrame(animate)
   stats.update()
+
+  requestAnimationFrame(animate)
 
   // responsiveness
   if (resizeRendererToDisplaySize(renderer)) {
@@ -148,6 +166,9 @@ function animate() {
   cameraOrbitControls.update()
 
   interactionManager.update()
+
+  updateBrainPosition()
+
   renderer.render(scene, camera)
 }
 
@@ -347,6 +368,10 @@ function Toaster() {
 
   return {
     display,
-    hide,
   }
+}
+
+function updateBrainPosition() {
+  const delta = clock.getDelta()
+  meshes.leftHemisphere.rotateY(delta * (Math.PI / 20)).translateZ(delta * 0.1)
 }
