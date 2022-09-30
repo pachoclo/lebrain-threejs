@@ -94,13 +94,13 @@ async function init() {
 
   interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
 
-  stats = Stats()
-
   meshes = await makeMeshes()
 
-  scene = new THREE.Scene()
+  stats = Stats()
 
   clock = new THREE.Clock()
+
+  scene = new THREE.Scene()
 }
 
 async function main() {
@@ -119,12 +119,13 @@ async function main() {
   meshes.boundingMeshRight.addEventListener('mouseover', handleHemisphereClick)
   meshes.boundingMeshRight.addEventListener('click', (event) => {
     event.stopPropagation()
+    soundLibrary.squish.play()
   })
   meshes.boundingMeshLeft.addEventListener('mouseover', handleHemisphereClick)
 
   meshes.boundingMeshLeft.addEventListener('click', (event) => {
     event?.stopPropagation()
-    soundLibrary.squish.play()
+    soundLibrary.squish.paused && soundLibrary.squish.play()
     interactionManager.remove(meshes.boundingMeshLeft)
     meshes.leftHemisphere.remove(meshes.boundingMeshLeft)
     meshes.leftHemisphere.parent?.remove(meshes.leftHemisphere)
