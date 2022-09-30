@@ -1,6 +1,6 @@
 import GUI from 'lil-gui'
 import * as THREE from 'three'
-import { MeshPhongMaterial, PointLightHelper } from 'three'
+import { MeshPhongMaterial, PointLightHelper, Vector3 } from 'three'
 import { InteractionManager } from 'three.interactive'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -164,15 +164,19 @@ function animate() {
     camera.updateProjectionMatrix()
   }
 
-  // make sure the camera is always looking at the brain
-  const { x: ctrlTargetX, y: ctrlTargetY, z: ctrlTargetZ } = meshes.rightHemisphere.position
-  cameraOrbitControls.target.set(ctrlTargetX, ctrlTargetY + 1.4, ctrlTargetZ + 0.4)
-  cameraOrbitControls.update()
-
   interactionManager.update()
 
   updateRightHemisphere()
   updateLeftHemisphere()
+
+  // make sure the camera is always looking at the brain
+  const rightHemispherePosition = meshes.rightHemisphere.getWorldPosition(new Vector3())
+  cameraOrbitControls.target.set(
+    rightHemispherePosition.x,
+    rightHemispherePosition.y,
+    rightHemispherePosition.z + 0.4
+  )
+  cameraOrbitControls.update()
 
   renderer.render(scene, camera)
 }
@@ -355,7 +359,7 @@ let movement = {
   left: false,
   warp: false,
   isMoving() {
-    return this.forward || this.reverse || this.left || this.right
+    return this.forward || this.reverse
   },
 }
 
@@ -412,15 +416,16 @@ function registerKeyboardEvents() {
 }
 
 function updateRightHemisphere() {
+  const rotationAngle = Math.PI
   const delta = clock.getDelta()
   const mesh = meshes.rightHemisphere
-  const turbo = movement.warp ? 2 : 0
+  const turbo = movement.warp ? 1 : 0
   const distance = delta * 2 + turbo
 
   movement.forward && mesh.translateZ(distance)
   movement.reverse && mesh.translateZ(-distance)
-  movement.right && mesh.translateX(-distance)
-  movement.left && mesh.translateX(distance)
+  movement.isMoving() && movement.right && mesh.rotateY(-(delta * rotationAngle))
+  movement.isMoving() && movement.left && mesh.rotateY(delta * rotationAngle)
 
   if (movement.isMoving()) {
     soundLibrary.spaceship.play()
