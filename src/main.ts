@@ -376,6 +376,8 @@ function Toaster() {
 }
 
 function updateBrainPosition() {
-  const delta = clock.getDelta()
-  meshes.leftHemisphere.rotateY(delta * (Math.PI / 20)).translateZ(delta * 0.1)
+  const elapsed = clock.getElapsedTime()
+  const bounceSpeed = 1.3
+  const amplitude = 0.4
+  meshes.leftHemisphere.position.y = Math.abs(Math.sin(elapsed * bounceSpeed) * amplitude)
 }
