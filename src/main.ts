@@ -64,11 +64,11 @@ async function init() {
   lights.pointLight01.position.set(-5, 3, 2)
   lights.pointLight02.position.set(5, 3, 3)
   lights.pointLight02.castShadow = true
-  lights.pointLight02.shadow.radius = 15
+  lights.pointLight02.shadow.radius = 5
   lights.pointLight02.shadow.camera.near = 0.1
   lights.pointLight02.shadow.camera.far = 400
-  lights.pointLight02.shadow.mapSize.width = 4000
-  lights.pointLight02.shadow.mapSize.height = 4000
+  lights.pointLight02.shadow.mapSize.width = 1000
+  lights.pointLight02.shadow.mapSize.height = 1000
 
   lightHelpers = {
     pointLight01Helper: new PointLightHelper(lights.pointLight01),
@@ -133,24 +133,23 @@ async function main() {
 
   animate()
 
-  // document.addEventListener(
-  //   'visibilitychange',
-  //   () => {
-  //     if (document.visibilityState === 'hidden') {
-  //       clock.stop()
-  //       console.log('⏸ animation paused')
-  //     } else if (document.visibilityState === 'visible') {
-  //       clock.start()
-  //       console.log('▶️ animation resumed')
-  //     }
-  //   },
-  //   false
-  // )
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      if (document.visibilityState === 'hidden') {
+        clock.stop()
+        console.log('⏸ animation paused')
+      } else if (document.visibilityState === 'visible') {
+        clock.start()
+        console.log('▶️ animation resumed')
+      }
+    },
+    false
+  )
 }
 
 function animate() {
   stats.update()
-
   requestAnimationFrame(animate)
 
   // responsiveness
@@ -162,7 +161,7 @@ function animate() {
 
   // make sure the camera is always looking at the brain
   const { x: ctrlTargetX, y: ctrlTargetY, z: ctrlTargetZ } = meshes.brain.position
-  cameraOrbitControls.target.set(ctrlTargetX, ctrlTargetY, ctrlTargetZ)
+  cameraOrbitControls.target.set(ctrlTargetX, ctrlTargetY, ctrlTargetZ + 0.4)
   cameraOrbitControls.update()
 
   interactionManager.update()
