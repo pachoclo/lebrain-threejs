@@ -119,7 +119,6 @@ async function main() {
   meshes.boundingMeshRight.addEventListener('mouseover', handleHemisphereClick)
   meshes.boundingMeshRight.addEventListener('click', (event) => {
     event.stopPropagation()
-    soundLibrary.squish.play()
   })
   meshes.boundingMeshLeft.addEventListener('mouseover', handleHemisphereClick)
 
