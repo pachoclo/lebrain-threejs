@@ -130,12 +130,6 @@ async function main() {
     meshes.leftHemisphere.parent?.remove(meshes.leftHemisphere)
   })
 
-  document.body.appendChild(stats.dom)
-
-  makeGUI()
-
-  animate()
-
   document.addEventListener(
     'visibilitychange',
     () => {
@@ -149,6 +143,14 @@ async function main() {
     },
     false
   )
+
+  registerKeyboardEvents()
+
+  document.body.appendChild(stats.dom)
+
+  makeGUI()
+
+  animate()
 }
 
 function animate() {
@@ -163,13 +165,14 @@ function animate() {
   }
 
   // make sure the camera is always looking at the brain
-  const { x: ctrlTargetX, y: ctrlTargetY, z: ctrlTargetZ } = meshes.brain.position
-  cameraOrbitControls.target.set(ctrlTargetX, ctrlTargetY, ctrlTargetZ + 0.4)
+  const { x: ctrlTargetX, y: ctrlTargetY, z: ctrlTargetZ } = meshes.rightHemisphere.position
+  cameraOrbitControls.target.set(ctrlTargetX, ctrlTargetY + 1.4, ctrlTargetZ + 0.4)
   cameraOrbitControls.update()
 
   interactionManager.update()
 
-  updateBrainPosition()
+  updateRightHemisphere()
+  updateLeftHemisphere()
 
   renderer.render(scene, camera)
 }
@@ -248,8 +251,6 @@ async function makeMeshes(): Promise<Meshes> {
   brain.scale.setScalar(3)
   brain.position.set(0, 1.5, 0)
 
-  registerMeshControls(leftHemisphere)
-
   logObject(brain)
 
   return {
@@ -310,36 +311,6 @@ function makeGUI() {
   return gui
 }
 
-function registerMeshControls(mesh: THREE.Object3D) {
-  const originalPosition = mesh.position.clone()
-  const stepSize = 0.1
-
-  document.addEventListener('keydown', (event: KeyboardEvent) => {
-    switch (event.key) {
-      case 'ArrowLeft': {
-        mesh.translateX(-stepSize)
-        break
-      }
-      case 'ArrowRight': {
-        mesh.translateX(stepSize)
-        break
-      }
-      case 'ArrowUp': {
-        mesh.translateZ(-stepSize)
-        break
-      }
-      case 'ArrowDown': {
-        mesh.translateZ(stepSize)
-        break
-      }
-      case 'r': {
-        mesh.position.set(originalPosition.x, originalPosition.y, originalPosition.z)
-        break
-      }
-    }
-  })
-}
-
 function Toaster() {
   const el = document.querySelector('.debuggy')! as HTMLElement
   let isHidden = true
@@ -377,7 +348,92 @@ function Toaster() {
   }
 }
 
-function updateBrainPosition() {
+let movement = {
+  forward: false,
+  reverse: false,
+  right: false,
+  left: false,
+  warp: false,
+  isMoving() {
+    return this.forward || this.reverse || this.left || this.right
+  },
+}
+
+function registerKeyboardEvents() {
+  document.addEventListener('keydown', (event: KeyboardEvent) => {
+    switch (event.key) {
+      case 'ArrowUp': {
+        movement.forward = true
+        break
+      }
+      case 'ArrowDown': {
+        movement.reverse = true
+        break
+      }
+      case 'ArrowRight': {
+        movement.right = true
+        break
+      }
+      case 'ArrowLeft': {
+        movement.left = true
+        break
+      }
+      case 'Shift': {
+        movement.warp = true
+        break
+      }
+    }
+  })
+
+  document.addEventListener('keyup', (event: KeyboardEvent) => {
+    switch (event.key) {
+      case 'ArrowUp': {
+        movement.forward = false
+        break
+      }
+      case 'ArrowDown': {
+        movement.reverse = false
+        break
+      }
+      case 'ArrowRight': {
+        movement.right = false
+        break
+      }
+      case 'ArrowLeft': {
+        movement.left = false
+        break
+      }
+      case 'Shift': {
+        movement.warp = false
+        break
+      }
+    }
+  })
+}
+
+function updateRightHemisphere() {
+  const delta = clock.getDelta()
+  const mesh = meshes.rightHemisphere
+  const turbo = movement.warp ? 2 : 0
+  const distance = delta * 2 + turbo
+
+  movement.forward && mesh.translateZ(distance)
+  movement.reverse && mesh.translateZ(-distance)
+  movement.right && mesh.translateX(-distance)
+  movement.left && mesh.translateX(distance)
+
+  if (movement.isMoving()) {
+    soundLibrary.spaceship.play()
+    movement.warp && soundLibrary.spaceshipBoost.play()
+  } else {
+    soundLibrary.spaceship.fastSeek(0)
+    soundLibrary.spaceship.pause()
+    soundLibrary.spaceshipBoost.fastSeek(0)
+    soundLibrary.spaceshipBoost.pause()
+  }
+}
+
+function updateLeftHemisphere() {
   const elapsed = clock.getElapsedTime()
   const bounceSpeed = 1.5
   const amplitude = 0.4
