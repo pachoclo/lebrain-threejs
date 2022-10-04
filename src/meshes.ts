@@ -83,7 +83,6 @@ export async function buildMeshes(): Promise<Meshes> {
   brain.name = 'brain'
   brain.add(leftHemisphere)
   brain.add(rightHemisphere)
-  brain.scale.setScalar(3)
 
   logObject(brain)
 

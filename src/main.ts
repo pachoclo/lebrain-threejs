@@ -60,6 +60,7 @@ init()
 
 async function init() {
   grid = new THREE.GridHelper(20, 20, 'teal', 'darkgray')
+  grid.position.set(0, -0.4, 0)
 
   lights = {
     ambientLight: new THREE.AmbientLight('orange', 0.2),
@@ -85,7 +86,7 @@ async function init() {
   lightHelpers.pointLight02Helper.visible = false
 
   camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200)
-  camera.position.set(2.3, 1.6, 2.6)
+  camera.position.set(2.3, 0.6, 3)
 
   canvas = document.querySelector(`canvas#${CANVAS_ID}`)!
 
@@ -121,16 +122,17 @@ async function main() {
   interactionManager.add(meshes.boundingMeshLeft)
   interactionManager.add(meshes.boundingMeshRight)
 
-  const handleHemisphereClick = (event: THREE.Event) => {
+  const handleHemisphereHover = (event: THREE.Event) => {
     event.stopPropagation()
     toaster.display(event)
   }
-  meshes.boundingMeshRight.addEventListener('mouseover', handleHemisphereClick)
+
+  meshes.boundingMeshRight.addEventListener('mouseover', handleHemisphereHover)
+  meshes.boundingMeshLeft.addEventListener('mouseover', handleHemisphereHover)
+
   meshes.boundingMeshRight.addEventListener('click', (event) => {
     event.stopPropagation()
   })
-  meshes.boundingMeshLeft.addEventListener('mouseover', handleHemisphereClick)
-
   meshes.boundingMeshLeft.addEventListener('click', (event) => {
     event?.stopPropagation()
     soundLibrary.squish.paused && soundLibrary.squish.play()
@@ -169,6 +171,7 @@ function animate() {
 
   driveBrain()
   state.bouncing && !state.isDriving() && bounceBrain()
+  // bounceBrain()
 
   brainBoxHelper.update()
   interactionManager.update()
@@ -317,16 +320,16 @@ function driveBrain() {
 
 function bounceBrain() {
   const mesh = meshes.brain
-
-  const elapsed = clock.getElapsedTime()
   const bounceSpeed = 1.5
   const amplitude = 0.4
+
+  const elapsed = clock.getElapsedTime()
   const yPos = Math.abs(Math.sin(elapsed * bounceSpeed) * amplitude)
 
   mesh.position.y = yPos
 
   if (yPos < 0.04) {
-    mesh.scale.set(1.05, 0.98, 1.05)
+    mesh.scale.set(1.05, 0.85, 1.05)
     state.squished = true
   }
   if (yPos >= 0.04 && state.squished) {
