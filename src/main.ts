@@ -1,26 +1,16 @@
 import GUI from 'lil-gui'
 import * as THREE from 'three'
-import { MeshPhongMaterial, PointLightHelper, Vector3 } from 'three'
+import { Box3Helper, PointLightHelper, Vector3 } from 'three'
 import { InteractionManager } from 'three.interactive'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { logObject } from './helpers/dump-object'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
+import { buildMeshes, Meshes } from './meshes'
 import { soundLibrary } from './sound-library'
 import './style.css'
+import { makeToaster } from './toaster'
 
 const CANVAS_ID = 'lebrain'
-
-type Meshes = {
-  brain: THREE.Object3D
-  leftHemisphere: THREE.Object3D
-  rightHemisphere: THREE.Object3D
-  cerebrum: THREE.Mesh
-  cerebellum: THREE.Mesh
-  boundingMeshLeft: THREE.Mesh
-  boundingMeshRight: THREE.Mesh
-}
 
 type Lights = {
   ambientLight: THREE.AmbientLight
@@ -46,7 +36,22 @@ let stats: Stats
 let lightHelpers: LightHelpers
 let clock: THREE.Clock
 
-const toaster = Toaster()
+const toaster = makeToaster('.debuggy')
+
+let brainBoxHelper: THREE.BoxHelper
+
+const state = {
+  forward: false,
+  reverse: false,
+  right: false,
+  left: false,
+  warp: false,
+  isDriving() {
+    return this.forward || this.reverse
+  },
+  squished: false,
+  bouncing: true,
+}
 
 init()
   .then(() => main())
@@ -80,7 +85,7 @@ async function init() {
   lightHelpers.pointLight02Helper.visible = false
 
   camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200)
-  camera.position.set(5.3, 1.6, 5.6)
+  camera.position.set(2.3, 1.6, 2.6)
 
   canvas = document.querySelector(`canvas#${CANVAS_ID}`)!
 
@@ -94,7 +99,9 @@ async function init() {
 
   interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
 
-  meshes = await makeMeshes()
+  meshes = await buildMeshes()
+
+  brainBoxHelper = new THREE.BoxHelper(meshes.brain)
 
   stats = Stats()
 
@@ -108,6 +115,7 @@ async function main() {
   Object.values(lightHelpers).forEach((lightHelper) => scene.add(lightHelper))
   scene.add(grid)
   scene.add(meshes.brain)
+  scene.add(brainBoxHelper)
 
   interactionManager.add(meshes.boundingMeshLeft)
   interactionManager.add(meshes.boundingMeshRight)
@@ -128,6 +136,7 @@ async function main() {
     interactionManager.remove(meshes.boundingMeshLeft)
     meshes.leftHemisphere.remove(meshes.boundingMeshLeft)
     meshes.leftHemisphere.parent?.remove(meshes.leftHemisphere)
+    state.bouncing = false
   })
 
   document.addEventListener(
@@ -157,6 +166,12 @@ function animate() {
   stats.update()
   requestAnimationFrame(animate)
 
+  driveBrain()
+  state.bouncing && !state.isDriving() && bounceBrain()
+
+  brainBoxHelper.update()
+  interactionManager.update()
+
   // responsiveness
   if (resizeRendererToDisplaySize(renderer)) {
     const canvas = renderer.domElement
@@ -164,108 +179,12 @@ function animate() {
     camera.updateProjectionMatrix()
   }
 
-  interactionManager.update()
-
-  updateRightHemisphere()
-  updateLeftHemisphere()
-
   // make sure the camera is always looking at the brain
-  const rightHemispherePosition = meshes.rightHemisphere.getWorldPosition(new Vector3())
-  cameraOrbitControls.target.set(
-    rightHemispherePosition.x,
-    rightHemispherePosition.y,
-    rightHemispherePosition.z + 0.4
-  )
+  const rightHemispherePosition = meshes.brain.getWorldPosition(new Vector3())
+  cameraOrbitControls.target.set(rightHemispherePosition.x, 0.2, rightHemispherePosition.z + 0.1)
   cameraOrbitControls.update()
 
   renderer.render(scene, camera)
-}
-
-async function makeMeshes(): Promise<Meshes> {
-  const gltfLoader = new GLTFLoader()
-  const gltf = await gltfLoader.loadAsync('/models/brain_sliced.glb')
-  document.querySelector('#loader')?.remove()
-
-  const cerebrumRight = gltf.scene.getObjectByName('cerebrum-right')! as THREE.Mesh
-  const cerebrumMaterial = new MeshPhongMaterial({ color: 'pink', shininess: 50 })
-  cerebrumRight.material = cerebrumMaterial // override material
-
-  const cerebrumLeft = new THREE.Mesh()
-  cerebrumLeft.copy(cerebrumRight)
-  cerebrumLeft.name = 'cerebrum-left'
-  cerebrumLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1)) // mirror geometry
-
-  const cerebellumRight = gltf.scene.getObjectByName('cerebellum-right') as THREE.Mesh
-
-  const cerebellumLeft = new THREE.Mesh()
-  cerebellumLeft.copy(cerebellumRight)
-  cerebellumLeft.name = 'cerebellum-left'
-  cerebellumLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
-
-  const rightHemisphere = new THREE.Group()
-  rightHemisphere.name = 'right-hemisphere'
-  rightHemisphere.add(cerebrumRight)
-  rightHemisphere.add(cerebellumRight)
-  rightHemisphere.children.forEach((child) => {
-    if (child.type === 'Mesh') {
-      child.receiveShadow = true
-    }
-  })
-
-  const leftHemisphere = new THREE.Group()
-  leftHemisphere.name = 'left-hemisphere'
-  leftHemisphere.add(cerebrumLeft)
-  leftHemisphere.add(cerebellumLeft)
-  leftHemisphere.children.forEach((child) => {
-    if (child.type === 'Mesh') {
-      child.castShadow = true
-    }
-  })
-
-  const boundingMeshRight = gltf.scene.getObjectByName('bounding-mesh') as THREE.Mesh
-  boundingMeshRight.name = 'bounding-mesh-right-hemisphere'
-  boundingMeshRight.material = new MeshPhongMaterial({
-    flatShading: true,
-    visible: false,
-    opacity: 0.5,
-    transparent: true,
-    color: 'green',
-    shininess: 200,
-  })
-  rightHemisphere.add(boundingMeshRight)
-
-  const boundingMeshLeft = new THREE.Mesh()
-  boundingMeshLeft.copy(boundingMeshRight)
-  boundingMeshLeft.name = 'bounding-mesh-left-hemisphere'
-  boundingMeshLeft.applyMatrix4(new THREE.Matrix4().makeScale(-1, 1, 1))
-  boundingMeshLeft.material = new MeshPhongMaterial({
-    flatShading: true,
-    visible: false,
-    opacity: 0.5,
-    transparent: true,
-    color: 'blue',
-    shininess: 200,
-  })
-  leftHemisphere.add(boundingMeshLeft)
-
-  const brain = new THREE.Object3D()
-  brain.name = 'brain'
-  brain.add(leftHemisphere)
-  brain.add(rightHemisphere)
-  brain.scale.setScalar(3)
-  brain.position.set(0, 1.5, 0)
-
-  logObject(brain)
-
-  return {
-    brain,
-    cerebrum: cerebrumRight,
-    cerebellum: cerebellumRight,
-    leftHemisphere,
-    rightHemisphere,
-    boundingMeshLeft,
-    boundingMeshRight,
-  }
 }
 
 function makeGUI() {
@@ -299,6 +218,10 @@ function makeGUI() {
   boundingGeometryControls.add(meshes.boundingMeshRight.material, 'visible').name('Right visible')
   boundingGeometryControls.close()
 
+  const boundingBoxControls = gui.addFolder('Bounding Box')
+  boundingBoxControls.add(brainBoxHelper, 'visible').name('Brain')
+  boundingBoxControls.close()
+
   let castShadows = {
     enabled: true,
   }
@@ -315,75 +238,27 @@ function makeGUI() {
   return gui
 }
 
-function Toaster() {
-  const el = document.querySelector('.debuggy')! as HTMLElement
-  let isHidden = true
-  let timeoutId: number | null = null
-
-  const hide = () => {
-    cancelTimeout()
-    if (!isHidden) {
-      el.classList.add('hidden')
-      isHidden = true
-    }
-  }
-
-  const display = (event: THREE.Event, msg?: string) => {
-    cancelTimeout()
-    const name: string = event.target.parent.name
-      .split('-')
-      .map((word: string) => word.at(0)?.toUpperCase() + word.slice(1))
-      .join(' ')
-    el.textContent = name + (msg ? ` ${msg}` : '')
-    if (isHidden) {
-      el.classList.remove('hidden')
-      isHidden = false
-    }
-    timeoutId = setTimeout(hide, 3000)
-  }
-
-  const cancelTimeout = () => {
-    timeoutId && clearTimeout(timeoutId)
-    timeoutId = null
-  }
-
-  return {
-    display,
-  }
-}
-
-let movement = {
-  forward: false,
-  reverse: false,
-  right: false,
-  left: false,
-  warp: false,
-  isMoving() {
-    return this.forward || this.reverse
-  },
-}
-
 function registerKeyboardEvents() {
   document.addEventListener('keydown', (event: KeyboardEvent) => {
     switch (event.key) {
       case 'ArrowUp': {
-        movement.forward = true
+        state.forward = true
         break
       }
       case 'ArrowDown': {
-        movement.reverse = true
+        state.reverse = true
         break
       }
       case 'ArrowRight': {
-        movement.right = true
+        state.right = true
         break
       }
       case 'ArrowLeft': {
-        movement.left = true
+        state.left = true
         break
       }
       case 'Shift': {
-        movement.warp = true
+        state.warp = true
         break
       }
     }
@@ -392,44 +267,45 @@ function registerKeyboardEvents() {
   document.addEventListener('keyup', (event: KeyboardEvent) => {
     switch (event.key) {
       case 'ArrowUp': {
-        movement.forward = false
+        state.forward = false
         break
       }
       case 'ArrowDown': {
-        movement.reverse = false
+        state.reverse = false
         break
       }
       case 'ArrowRight': {
-        movement.right = false
+        state.right = false
         break
       }
       case 'ArrowLeft': {
-        movement.left = false
+        state.left = false
         break
       }
       case 'Shift': {
-        movement.warp = false
+        state.warp = false
         break
       }
     }
   })
 }
 
-function updateRightHemisphere() {
+function driveBrain() {
+  const mesh = meshes.brain
   const rotationAngle = Math.PI
+  const speed = 10
   const delta = clock.getDelta()
-  const mesh = meshes.rightHemisphere
-  const turbo = movement.warp ? 1 : 0
-  const distance = delta * 2 + turbo
+  const turbo = state.warp ? 10 : 0
+  const distance = delta * speed + turbo
 
-  movement.forward && mesh.translateZ(distance)
-  movement.reverse && mesh.translateZ(-distance)
-  movement.isMoving() && movement.right && mesh.rotateY(-(delta * rotationAngle))
-  movement.isMoving() && movement.left && mesh.rotateY(delta * rotationAngle)
+  state.forward && mesh.translateZ(distance)
+  state.reverse && mesh.translateZ(-distance)
+  state.isDriving() && state.right && mesh.rotateY(-(delta * rotationAngle))
+  state.isDriving() && state.left && mesh.rotateY(delta * rotationAngle)
 
-  if (movement.isMoving()) {
+  if (state.isDriving()) {
     soundLibrary.spaceship.play()
-    movement.warp && soundLibrary.spaceshipBoost.play()
+    state.warp && soundLibrary.spaceshipBoost.play()
   } else {
     soundLibrary.spaceship.fastSeek(0)
     soundLibrary.spaceship.pause()
@@ -438,9 +314,22 @@ function updateRightHemisphere() {
   }
 }
 
-function updateLeftHemisphere() {
+function bounceBrain() {
+  const mesh = meshes.brain
+
   const elapsed = clock.getElapsedTime()
   const bounceSpeed = 1.5
   const amplitude = 0.4
-  meshes.leftHemisphere.position.y = Math.abs(Math.sin(elapsed * bounceSpeed) * amplitude)
+  const yPos = Math.abs(Math.sin(elapsed * bounceSpeed) * amplitude)
+
+  mesh.position.y = yPos
+
+  if (yPos < 0.04) {
+    mesh.scale.set(1.05, 0.98, 1.05)
+    state.squished = true
+  }
+  if (yPos >= 0.04 && state.squished) {
+    mesh.scale.set(1, 1, 1)
+    state.squished = false
+  }
 }
