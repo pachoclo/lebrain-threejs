@@ -102,6 +102,7 @@ async function init() {
   meshes = await buildMeshes()
 
   brainBoxHelper = new THREE.BoxHelper(meshes.brain)
+  brainBoxHelper.visible = false
 
   stats = Stats()
 
