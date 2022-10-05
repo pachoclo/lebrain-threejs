@@ -5,6 +5,7 @@ import { InteractionManager } from 'three.interactive'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
+import { infoPanel } from './info-panel'
 import { buildMeshes, Meshes } from './meshes'
 import { soundLibrary } from './sound-library'
 import './style.css'
@@ -132,6 +133,7 @@ async function main() {
 
   meshes.boundingMeshRight.addEventListener('click', (event) => {
     event.stopPropagation()
+    infoPanel('frontalLobe')
   })
   meshes.boundingMeshLeft.addEventListener('click', (event) => {
     event?.stopPropagation()
@@ -140,6 +142,7 @@ async function main() {
     meshes.leftHemisphere.remove(meshes.boundingMeshLeft)
     meshes.leftHemisphere.parent?.remove(meshes.leftHemisphere)
     state.bouncing = false
+    infoPanel('parietalLobe')
   })
 
   document.addEventListener(
