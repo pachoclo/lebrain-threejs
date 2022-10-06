@@ -30,7 +30,7 @@ let show = () => {
 
 let closeButton = document.createElement('button')
 closeButton.classList.add('info-panel-close')
-closeButton.textContent = 'x'
+closeButton.textContent = 'close'
 
 closeButton.addEventListener('mousedown', hide)
 overlay?.addEventListener('mousedown', (event) => {
