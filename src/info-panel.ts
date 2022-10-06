@@ -29,12 +29,12 @@ let show = () => {
   }, 50)
 }
 
-let button = document.createElement('button')
-button.classList.add('info-panel-close')
-button.textContent = 'x'
+let closeButton = document.createElement('button')
+closeButton.classList.add('info-panel-close')
+closeButton.textContent = 'x'
 
-button.addEventListener('mouseup', hide)
-overlay?.addEventListener('mouseup', (event) => {
+closeButton.addEventListener('mousedown', hide)
+overlay?.addEventListener('mousedown', (event) => {
   const { target } = event
   if (target && (target as HTMLElement).className === 'overlay') {
     hide()
@@ -44,21 +44,17 @@ overlay?.addEventListener('mouseup', (event) => {
 export function infoPanel(partName: keyof typeof partInfo) {
   let info = partInfo[partName]
 
-  if (hidden) {
-    show()
-  } else {
-    hide()
-  }
-
   infoPanelContainer.innerHTML = `
-    <article>
-    <h1>${info.title}</h1>
-    <p>
-      <img src="/images/${info.image}"/>
-    </p>
-      <p>${info.content}</p>
-    </article>
+  <article>
+  <h1>${info.title}</h1>
+  <p>
+  <img src="/images/${info.image}"/>
+  </p>
+  <p>${info.content}</p>
+  </article>
   `
 
-  infoPanelContainer.prepend(button)
+  infoPanelContainer.prepend(closeButton)
+
+  show()
 }

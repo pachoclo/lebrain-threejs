@@ -41,6 +41,8 @@ const toaster = makeToaster('.debuggy')
 
 let brainBoxHelper: THREE.BoxHelper
 
+const isDevEnvironment = import.meta.env.DEV
+
 const state = {
   forward: false,
   reverse: false,
@@ -78,14 +80,6 @@ async function init() {
   lights.pointLight02.shadow.mapSize.width = 1000
   lights.pointLight02.shadow.mapSize.height = 1000
 
-  lightHelpers = {
-    pointLight01Helper: new PointLightHelper(lights.pointLight01),
-    pointLight02Helper: new PointLightHelper(lights.pointLight02),
-  }
-
-  lightHelpers.pointLight01Helper.visible = false
-  lightHelpers.pointLight02Helper.visible = false
-
   camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200)
   camera.position.set(2.3, 0.6, 3)
 
@@ -103,10 +97,19 @@ async function init() {
 
   meshes = await buildMeshes()
 
-  brainBoxHelper = new THREE.BoxHelper(meshes.brain)
-  brainBoxHelper.visible = false
+  if (isDevEnvironment) {
+    lightHelpers = {
+      pointLight01Helper: new PointLightHelper(lights.pointLight01),
+      pointLight02Helper: new PointLightHelper(lights.pointLight02),
+    }
+    lightHelpers.pointLight01Helper.visible = false
+    lightHelpers.pointLight02Helper.visible = false
 
-  stats = Stats()
+    brainBoxHelper = new THREE.BoxHelper(meshes.brain)
+    brainBoxHelper.visible = false
+
+    stats = Stats()
+  }
 
   clock = new THREE.Clock()
 
@@ -115,10 +118,12 @@ async function init() {
 
 async function main() {
   Object.values(lights).forEach((light) => scene.add(light))
-  Object.values(lightHelpers).forEach((lightHelper) => scene.add(lightHelper))
   scene.add(grid)
   scene.add(meshes.brain)
-  scene.add(brainBoxHelper)
+  if (isDevEnvironment) {
+    Object.values(lightHelpers).forEach((lightHelper) => scene.add(lightHelper))
+    scene.add(brainBoxHelper)
+  }
 
   interactionManager.add(meshes.boundingMeshLeft)
   interactionManager.add(meshes.boundingMeshRight)
@@ -161,23 +166,26 @@ async function main() {
 
   registerKeyboardEvents()
 
-  document.body.appendChild(stats.dom)
-
-  makeGUI()
+  if (isDevEnvironment) {
+    document.body.appendChild(stats.dom)
+    makeGUI()
+  }
 
   animate()
 }
 
 function animate() {
-  stats.update()
+  if (isDevEnvironment) {
+    stats.update()
+    brainBoxHelper.update()
+    interactionManager.update()
+  }
+
   requestAnimationFrame(animate)
 
   driveBrain()
   state.bouncing && !state.isDriving() && bounceBrain()
   // bounceBrain()
-
-  brainBoxHelper.update()
-  interactionManager.update()
 
   // responsiveness
   if (resizeRendererToDisplaySize(renderer)) {
@@ -314,9 +322,9 @@ function driveBrain() {
     soundLibrary.spaceship.play()
     state.warp && soundLibrary.spaceshipBoost.play()
   } else {
-    soundLibrary.spaceship.fastSeek(0)
+    // soundLibrary.spaceship.fastSeek(0)
     soundLibrary.spaceship.pause()
-    soundLibrary.spaceshipBoost.fastSeek(0)
+    // soundLibrary.spaceshipBoost.fastSeek(0)
     soundLibrary.spaceshipBoost.pause()
   }
 }
