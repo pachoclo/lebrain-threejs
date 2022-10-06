@@ -185,7 +185,6 @@ function animate() {
 
   driveBrain()
   state.bouncing && !state.isDriving() && bounceBrain()
-  // bounceBrain()
 
   // responsiveness
   if (resizeRendererToDisplaySize(renderer)) {
@@ -322,9 +321,9 @@ function driveBrain() {
     soundLibrary.spaceship.play()
     state.warp && soundLibrary.spaceshipBoost.play()
   } else {
-    // soundLibrary.spaceship.fastSeek(0)
+    soundLibrary.spaceship.currentTime = 0
     soundLibrary.spaceship.pause()
-    // soundLibrary.spaceshipBoost.fastSeek(0)
+    soundLibrary.spaceshipBoost.currentTime = 0
     soundLibrary.spaceshipBoost.pause()
   }
 }
