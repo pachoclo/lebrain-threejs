@@ -11,7 +11,6 @@ export const partInfo = {
   },
 }
 
-let hidden = true
 let overlay = document.querySelector('.overlay')!
 let infoPanelContainer = document.querySelector('.info-panel-container')!
 
