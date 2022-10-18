@@ -1,3 +1,5 @@
+import './toaster.css'
+
 export function makeToaster(selector: string) {
   const el = document.querySelector(selector)! as HTMLElement
 

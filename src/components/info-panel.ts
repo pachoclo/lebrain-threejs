@@ -1,3 +1,5 @@
+import './info-panel.css'
+
 export const partInfo = {
   frontalLobe: {
     title: 'Frontal Lobe',
