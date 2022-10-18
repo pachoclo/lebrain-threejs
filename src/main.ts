@@ -5,11 +5,11 @@ import { InteractionManager } from 'three.interactive'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
-import { infoPanel } from './info-panel'
+import { infoPanel } from './components/info-panel'
 import { buildMeshes, Meshes } from './meshes'
 import { soundLibrary } from './sound-library'
 import './style.css'
-import { makeToaster } from './toaster'
+import { makeToaster } from './components/toaster'
 
 const CANVAS_ID = 'lebrain'
 
