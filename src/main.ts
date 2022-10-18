@@ -37,7 +37,7 @@ let stats: Stats
 let lightHelpers: LightHelpers
 let clock: THREE.Clock
 
-const toaster = makeToaster('.debuggy')
+const toaster = makeToaster('.toaster')
 
 let brainBoxHelper: THREE.BoxHelper
 
