@@ -14,7 +14,7 @@
     "husky": "^8.0.2",
     "lil-gui": "^0.17.0",
     "typescript": "^4.9.4",
-    "vite": "^3.2.5"
+    "vite": "^4.0.0"
   },
   "dependencies": {
     "three": "^0.147.0",
