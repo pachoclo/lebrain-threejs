@@ -12,7 +12,7 @@
   "devDependencies": {
     "@types/three": "^0.149.0",
     "husky": "^8.0.3",
-    "lil-gui": "^0.18.0",
+    "lil-gui": "^0.18.1",
     "typescript": "^5.0.3",
     "vite": "^4.1.4"
   },
