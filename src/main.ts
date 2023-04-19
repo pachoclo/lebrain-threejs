@@ -93,7 +93,7 @@ async function init() {
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-  interactionManager = new InteractionManager(renderer, camera, renderer.domElement, false)
+  interactionManager = new InteractionManager(renderer, camera, renderer.domElement)
 
   meshes = await buildMeshes()
 
