@@ -66,7 +66,7 @@ async function init() {
   grid.position.set(0, -0.4, 0)
 
   lights = {
-    ambientLight: new THREE.AmbientLight('orange', 0.2),
+    ambientLight: new THREE.AmbientLight('orange', 0.12),
     pointLight01: new THREE.PointLight('#69ffeb', 0.65, 100),
     pointLight02: new THREE.PointLight('#ffe9fc', 0.8, 100),
   }
@@ -108,7 +108,7 @@ async function init() {
     brainBoxHelper = new THREE.BoxHelper(meshes.brain)
     brainBoxHelper.visible = false
 
-    stats = Stats()
+    stats = new Stats()
   }
 
   clock = new THREE.Clock()

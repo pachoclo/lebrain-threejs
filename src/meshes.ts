@@ -18,7 +18,11 @@ export async function buildMeshes(): Promise<Meshes> {
   document.querySelector('#loader')?.remove()
 
   const cerebrumRight = gltf.scene.getObjectByName('cerebrum-right')! as THREE.Mesh
-  const cerebrumMaterial = new THREE.MeshPhongMaterial({ color: 'pink', shininess: 50 })
+  const cerebrumMaterial = new THREE.MeshStandardMaterial({
+    color: '#F29CA4',
+    roughness: 0.35,
+    metalness: 0.0,
+  })
   cerebrumRight.material = cerebrumMaterial // override material
 
   const cerebrumLeft = new THREE.Mesh()
